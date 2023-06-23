@@ -41,6 +41,10 @@ public class SellToServerCommand {
         }
         ShopItemWithVariation shopItemVar = new ShopItemWithVariation(new ShopItem(shopItem, 1 ,1, false));
         float cost = shopItemVar.getSellCost() * item.getCount();
+        if(cost <= 0) {
+            player.sendMessage(new StringTextComponent("This item does not have a listed price to sell!"), Util.NIL_UUID);
+            return 1;
+        }
         StorageProxy.getParty(player).setBalance(BigDecimal.valueOf(StorageProxy.getParty(player).getBalance().doubleValue()+cost));
         player.sendMessage(new StringTextComponent(cost + " has been added to your balance!"), Util.NIL_UUID);
         item.shrink(item.getCount());
