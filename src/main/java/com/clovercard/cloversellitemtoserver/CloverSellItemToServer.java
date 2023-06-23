@@ -23,5 +23,6 @@ public class CloverSellItemToServer {
     @SubscribeEvent
     public void onCommandRegister(RegisterCommandsEvent event) {
         new SellToServerCommand(event.getDispatcher());
+        new GetItemValueCommand(event.getDispatcher());
     }
 }

@@ -1,7 +1,6 @@
 package com.clovercard.cloversellitemtoserver;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.pixelmonmod.pixelmon.api.storage.StorageProxy;
 import com.pixelmonmod.pixelmon.entities.npcs.registry.BaseShopItem;
 import com.pixelmonmod.pixelmon.entities.npcs.registry.ServerNPCRegistry;
 import com.pixelmonmod.pixelmon.entities.npcs.registry.ShopItem;
@@ -14,15 +13,13 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.Util;
 import net.minecraft.util.text.StringTextComponent;
 
-import java.math.BigDecimal;
-
-public class SellToServerCommand {
-    public SellToServerCommand(CommandDispatcher<CommandSource> dispatcher) {
+public class GetItemValueCommand {
+    public GetItemValueCommand(CommandDispatcher<CommandSource> dispatcher) {
         dispatcher.register(
-                Commands.literal("csell").executes(cmd -> sellHeldItem(cmd.getSource()))
+                Commands.literal("cvalue").executes(cmd -> valueHeldItem(cmd.getSource()))
         );
     }
-    private int sellHeldItem(CommandSource src) {
+    private int valueHeldItem(CommandSource src) {
         if(!(src.getEntity() instanceof ServerPlayerEntity)) return 1;
         ServerPlayerEntity player = (ServerPlayerEntity) src.getEntity();
         assert player != null;
@@ -37,17 +34,15 @@ public class SellToServerCommand {
             return 1;
         }
         ShopItemWithVariation shopItemVar = new ShopItemWithVariation(new ShopItem(shopItem, 1 ,1, false));
-        //Get Cost Data
-        float cost = shopItemVar.getSellCost() * item.getCount();
-        if(cost <= 0) {
+
+        //Get cost data
+        float unitCost = shopItemVar.getSellCost();
+        float totalCost = shopItemVar.getSellCost() * item.getCount();
+        if(unitCost <= 0 || totalCost <= 0) {
             player.sendMessage(new StringTextComponent("This item does not have a listed price to sell!"), Util.NIL_UUID);
             return 1;
         }
-
-        //Sell Item
-        StorageProxy.getParty(player).setBalance(BigDecimal.valueOf(StorageProxy.getParty(player).getBalance().doubleValue()+cost));
-        player.sendMessage(new StringTextComponent(cost + " has been added to your balance!"), Util.NIL_UUID);
-        item.shrink(item.getCount());
+        player.sendMessage(new StringTextComponent("Sell Price: " + totalCost + " (" + unitCost + " per single unit)"), Util.NIL_UUID);
         return 0;
     }
 }
