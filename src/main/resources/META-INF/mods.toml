@@ -1,0 +1,36 @@
+modLoader = "javafml"
+loaderVersion = "[36,)"
+license = "MIT"
+
+[[mods]]
+modId = "cloversellitemtoserver"
+version = "1.0.0"
+displayName = "CloverSellItemToServer"
+displayURL = "https://github.com/CloverCard"
+credits = "https://github.com/CloverCard"
+authors = "https://github.com/CloverCard"
+description = '''
+Allows a player to sell their item in hand to the server if possible.
+'''
+
+[[dependencies.cloversellitemtoserver]]
+modId = "forge"
+mandatory = true
+versionRange = "[36,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.cloversellitemtoserver]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.16.5,1.17)"
+ordering = "NONE"
+side = "BOTH"
+
+
+[[dependencies.cloversellitemtoserver]]
+modId = "pixelmon"
+mandatory = true
+versionRange = "[9.1.2,)"
+ordering = "NONE"
+side = "BOTH"
