@@ -2,7 +2,8 @@ package com.clovercard.cloversellitemtoserver;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.pixelmonmod.pixelmon.api.storage.StorageProxy;
+import com.pixelmonmod.pixelmon.api.economy.BankAccount;
+import com.pixelmonmod.pixelmon.api.economy.BankAccountProxy;
 import com.pixelmonmod.pixelmon.entities.npcs.registry.BaseShopItem;
 import com.pixelmonmod.pixelmon.entities.npcs.registry.ServerNPCRegistry;
 import com.pixelmonmod.pixelmon.entities.npcs.registry.ShopItem;
@@ -15,7 +16,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.Util;
 import net.minecraft.util.text.StringTextComponent;
 
-import java.math.BigDecimal;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class SellToServerCommand {
     public SellToServerCommand(CommandDispatcher<CommandSource> dispatcher) {
@@ -53,7 +54,12 @@ public class SellToServerCommand {
         }
 
         //Sell Item
-        StorageProxy.getParty(player).setBalance(BigDecimal.valueOf(StorageProxy.getParty(player).getBalance().doubleValue()+cost));
+        BankAccount account = BankAccountProxy.getBankAccount(player).orElse(null);
+        if(account == null) {
+            player.sendMessage(new StringTextComponent("Could not found account associated with you!"), Util.NIL_UUID);
+            return 1;
+        }
+        account.add(cost);
         player.sendMessage(new StringTextComponent(cost + " has been added to your balance!"), Util.NIL_UUID);
         item.shrink(item.getCount());
         return 0;
@@ -85,7 +91,12 @@ public class SellToServerCommand {
         }
 
         //Sell Item
-        StorageProxy.getParty(player).setBalance(BigDecimal.valueOf(StorageProxy.getParty(player).getBalance().doubleValue()+cost));
+        BankAccount account = BankAccountProxy.getBankAccount(player).orElse(null);
+        if(account == null) {
+            player.sendMessage(new StringTextComponent("Could not found account associated with you!"), Util.NIL_UUID);
+            return 1;
+        }
+        account.add(cost);
         player.sendMessage(new StringTextComponent(cost + " has been added to your balance!"), Util.NIL_UUID);
         item.shrink(count);
         return 0;
@@ -94,8 +105,13 @@ public class SellToServerCommand {
         if(!(src.getEntity() instanceof ServerPlayerEntity)) return 1;
         ServerPlayerEntity player = (ServerPlayerEntity) src.getEntity();
         assert player != null;
-
-        player.inventory.items.stream().forEach(
+        BankAccount account = BankAccountProxy.getBankAccount(player).orElse(null);
+        if(account == null) {
+            player.sendMessage(new StringTextComponent("Could not found account associated with you!"), Util.NIL_UUID);
+            return 1;
+        }
+        AtomicReference<Float> sum = new AtomicReference<>((float) 0);
+        player.inventory.items.forEach(
                 item -> {
                     //Check if it exists within the shopkeeper json.
                     BaseShopItem shopItem = ServerNPCRegistry.shopkeepers.getItem(item);
@@ -105,13 +121,14 @@ public class SellToServerCommand {
                         float cost = shopItemVar.getSellCost() * item.getCount();
                         if(cost > 0) {
                             //Sell Item
-                            StorageProxy.getParty(player).setBalance(BigDecimal.valueOf(StorageProxy.getParty(player).getBalance().doubleValue()+cost));
+                            account.add(cost);
                             item.shrink(item.getCount());
                         }
+                        sum.updateAndGet(v -> v + cost);
                     }
                 }
         );
-        player.sendMessage(new StringTextComponent("All sellable items have been sold!"), Util.NIL_UUID);
+        player.sendMessage(new StringTextComponent("All sellable items have been sold! " + sum.get() + " earned!"), Util.NIL_UUID);
         return 0;
     }
 }
