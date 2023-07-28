@@ -23,18 +23,30 @@ public class SellToServerCommand {
         dispatcher.register(
                 Commands.literal("csell")
                         .then(Commands.literal("all")
-                                .executes(cmd -> sellInventory(cmd.getSource()))
+                                .executes(cmd -> sellCommand(cmd.getSource(), "all", 0))
                         )
                         .then(Commands.argument("count", IntegerArgumentType.integer(1))
-                                .executes(cmd -> sellHeldItem(cmd.getSource(), IntegerArgumentType.getInteger(cmd, "count")))
+                                .executes(cmd -> sellCommand(cmd.getSource(), "count", IntegerArgumentType.getInteger(cmd, "count")))
                         )
-                        .executes(cmd -> sellHeldItem(cmd.getSource()))
+                        .executes(cmd -> sellCommand(cmd.getSource(), "base", 0))
         );
     }
-    private int sellHeldItem(CommandSource src) {
+    private int sellCommand(CommandSource src, String type, int count) {
         if(!(src.getEntity() instanceof ServerPlayerEntity)) return 1;
         ServerPlayerEntity player = (ServerPlayerEntity) src.getEntity();
         assert player != null;
+        if(type.equals("all")) {
+            ConfirmationDialogue.sendConfirmation(player, "Are you sure you want to sell all the sellable items in your inventory?", type, count);
+        } else if (type.equals("count")) {
+            ConfirmationDialogue.sendConfirmation(player, "Are you sure you want to sell " + count + " of this item?", type, count);
+        }
+        else {
+            ConfirmationDialogue.sendConfirmation(player, "Are you sure you want to sell all of this item?", "base", count);
+        }
+        return 0;
+    }
+    public static void sellHeldItem(ServerPlayerEntity player) {
+        if(player == null) return;
 
         //Get Held Item
         ItemStack item = player.getItemInHand(Hand.MAIN_HAND);
@@ -43,31 +55,28 @@ public class SellToServerCommand {
         BaseShopItem shopItem = ServerNPCRegistry.shopkeepers.getItem(item);
         if(shopItem == null) {
             player.sendMessage(new StringTextComponent("This item does not have a listed price to sell!"), Util.NIL_UUID);
-            return 1;
+            return;
         }
         ShopItemWithVariation shopItemVar = new ShopItemWithVariation(new ShopItem(shopItem, 1 ,1, false));
         //Get Cost Data
         float cost = shopItemVar.getSellCost() * item.getCount();
         if(cost <= 0) {
             player.sendMessage(new StringTextComponent("This item does not have a listed price to sell!"), Util.NIL_UUID);
-            return 1;
+            return;
         }
 
         //Sell Item
         BankAccount account = BankAccountProxy.getBankAccount(player).orElse(null);
         if(account == null) {
             player.sendMessage(new StringTextComponent("Could not found account associated with you!"), Util.NIL_UUID);
-            return 1;
+            return;
         }
         account.add(cost);
         player.sendMessage(new StringTextComponent(cost + " has been added to your balance!"), Util.NIL_UUID);
         item.shrink(item.getCount());
-        return 0;
     }
-    private int sellHeldItem(CommandSource src, int count) {
-        if(!(src.getEntity() instanceof ServerPlayerEntity)) return 1;
-        ServerPlayerEntity player = (ServerPlayerEntity) src.getEntity();
-        assert player != null;
+    public static void sellHeldItem(ServerPlayerEntity player, int count) {
+        if(player == null) return;
 
         //Get Held Item
         ItemStack item = player.getItemInHand(Hand.MAIN_HAND);
@@ -76,39 +85,36 @@ public class SellToServerCommand {
         BaseShopItem shopItem = ServerNPCRegistry.shopkeepers.getItem(item);
         if(shopItem == null) {
             player.sendMessage(new StringTextComponent("This item does not have a listed price to sell!"), Util.NIL_UUID);
-            return 1;
+            return;
         }
         if(item.getCount() < count) {
             player.sendMessage(new StringTextComponent("You do not have " + count + " of this item!"), Util.NIL_UUID);
-            return 1;
+            return;
         }
         ShopItemWithVariation shopItemVar = new ShopItemWithVariation(new ShopItem(shopItem, 1 ,1, false));
         //Get Cost Data
         float cost = shopItemVar.getSellCost() * count;
         if(cost <= 0) {
             player.sendMessage(new StringTextComponent("This item does not have a listed price to sell!"), Util.NIL_UUID);
-            return 1;
+            return;
         }
 
         //Sell Item
         BankAccount account = BankAccountProxy.getBankAccount(player).orElse(null);
         if(account == null) {
             player.sendMessage(new StringTextComponent("Could not found account associated with you!"), Util.NIL_UUID);
-            return 1;
+            return;
         }
         account.add(cost);
         player.sendMessage(new StringTextComponent(cost + " has been added to your balance!"), Util.NIL_UUID);
         item.shrink(count);
-        return 0;
     }
-    private int sellInventory(CommandSource src) {
-        if(!(src.getEntity() instanceof ServerPlayerEntity)) return 1;
-        ServerPlayerEntity player = (ServerPlayerEntity) src.getEntity();
-        assert player != null;
+    public static void sellInventory(ServerPlayerEntity player) {
+        if(player == null) return;
         BankAccount account = BankAccountProxy.getBankAccount(player).orElse(null);
         if(account == null) {
             player.sendMessage(new StringTextComponent("Could not found account associated with you!"), Util.NIL_UUID);
-            return 1;
+            return;
         }
         AtomicReference<Float> sum = new AtomicReference<>((float) 0);
         player.inventory.items.forEach(
@@ -129,6 +135,5 @@ public class SellToServerCommand {
                 }
         );
         player.sendMessage(new StringTextComponent("All sellable items have been sold! " + sum.get() + " earned!"), Util.NIL_UUID);
-        return 0;
     }
 }
